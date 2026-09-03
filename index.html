@@ -77,6 +77,13 @@ tfoot td{font-weight:800;background:#f8fafc}
 .sticky-inner{max-width:980px;margin:auto;display:flex;gap:10px}
 .sticky button{flex:1}
 .section-note{font-size:12px;color:var(--muted);margin-top:6px}
+.sync-panel{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
+.sync-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sync-state{font-size:13px;font-weight:700}
+.sync-account{font-size:12px;color:var(--muted);margin-top:4px;word-break:break-word}
+.sync-actions{display:flex;gap:8px;flex-wrap:wrap}
+.sync-actions button{padding:9px 12px;font-size:13px}
+.cloud-good{color:#166534}.cloud-warn{color:#92400e}
 @media(max-width:760px){
   .grid4,.grid3,.grid2{grid-template-columns:1fr 1fr}
   .kpis{grid-template-columns:repeat(2,1fr)}
@@ -94,7 +101,21 @@ tfoot td{font-weight:800;background:#f8fafc}
   <div class="card">
     <div class="muted">Production Dashboard</div>
     <h1>Monthly + Weekly Planner</h1>
-    <div class="muted">Your entries are automatically stored on this device.</div>
+    <div class="muted" style="font-size:12px;margin-top:-4px">Cloud Sync Build v4</div>
+    <div class="muted">Your entries are stored on this device. Sign in below to sync them securely between your Samsung and Dell.</div>
+    <div class="sync-panel">
+      <div class="sync-row">
+        <div>
+          <div id="cloudStatus" class="sync-state cloud-warn">☁️ Cloud Sync: Not signed in</div>
+          <div id="cloudAccount" class="sync-account">Local device storage is active.</div>
+        </div>
+        <div class="sync-actions">
+          <button class="primary" id="googleSignIn" type="button">Sign in with Google</button>
+          <button class="secondary" id="syncNow" type="button" style="display:none">Sync Now</button>
+          <button class="secondary" id="googleSignOut" type="button" style="display:none">Sign Out</button>
+        </div>
+      </div>
+    </div>
     <div style="margin-top:10px;font-weight:700">Week: <span id="weekRange"></span></div>
     <div class="muted">Monday through Sunday</div>
     <div id="saveStatus" class="status">Ready</div>
@@ -270,24 +291,41 @@ const defaults = {
 let state = loadState();
 
 function clone(x){return JSON.parse(JSON.stringify(x))}
+function normalizeState(saved){
+  const merged=clone(defaults);
+  if(!saved || typeof saved!=="object") return merged;
+  Object.assign(merged.monthly,saved.monthly||{});
+  Object.assign(merged.commission,saved.commission||{});
+  for(const d of days) Object.assign(merged.daily[d],(saved.daily||{})[d]||{});
+  merged.notes=saved.notes||"";
+  return merged;
+}
 function loadState(){
   try{
     const raw=localStorage.getItem(KEY);
     if(!raw) return clone(defaults);
-    const saved=JSON.parse(raw);
-    const merged=clone(defaults);
-    Object.assign(merged.monthly,saved.monthly||{});
-    Object.assign(merged.commission,saved.commission||{});
-    for(const d of days) Object.assign(merged.daily[d],(saved.daily||{})[d]||{});
-    merged.notes=saved.notes||"";
-    return merged;
+    return normalizeState(JSON.parse(raw));
   }catch(e){return clone(defaults)}
 }
-function saveState(msg="Saved"){
+function saveState(msg="Saved", syncCloud=true){
   localStorage.setItem(KEY,JSON.stringify(state));
   const el=document.getElementById("saveStatus");
   el.textContent=msg+" • "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+  if(syncCloud && window.dashboardCloudHooks && typeof window.dashboardCloudHooks.onLocalSave==="function") {
+    window.dashboardCloudHooks.onLocalSave();
+  }
 }
+window.dashboardCloudHooks={
+  onLocalSave:null,
+  getState:()=>clone(state),
+  applyState:(incoming,msg="Cloud data loaded")=>{
+    state=normalizeState(incoming);
+    localStorage.setItem(KEY,JSON.stringify(state));
+    hydrate();
+    const el=document.getElementById("saveStatus");
+    el.textContent=msg+" • "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+  }
+};
 const n=id => Number(document.getElementById(id).value)||0;
 const money=v => "$"+Math.round(Number(v)||0).toLocaleString();
 const pct=(a,b)=> b>0 ? Math.round((a/b)*100) : 0;
@@ -446,10 +484,171 @@ document.getElementById("resetMonth").addEventListener("click",()=>{
 hydrate();
 </script>
 
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  getRedirectResult, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDIbvp_4onBNVBAGzioAKfhRB716Yji150",
+  authDomain: "production-dashboard-e608c.firebaseapp.com",
+  projectId: "production-dashboard-e608c",
+  storageBucket: "production-dashboard-e608c.firebasestorage.app",
+  messagingSenderId: "976191760744",
+  appId: "1:976191760744:web:ab54bc11bb566c6dba8edd"
+};
+
+const firebaseApp=initializeApp(firebaseConfig);
+const auth=getAuth(firebaseApp);
+const db=getFirestore(firebaseApp);
+const provider=new GoogleAuthProvider();
+provider.setCustomParameters({prompt:"select_account"});
+
+const statusEl=document.getElementById("cloudStatus");
+const accountEl=document.getElementById("cloudAccount");
+const signInBtn=document.getElementById("googleSignIn");
+const signOutBtn=document.getElementById("googleSignOut");
+const syncNowBtn=document.getElementById("syncNow");
+
+let currentUser=null;
+let cloudReady=false;
+let unsubscribe=null;
+let saveTimer=null;
+let applyingRemote=false;
+let lastCloudJson="";
+let dashboardRef=null;
+
+function setCloudStatus(text,good=false,detail=""){
+  statusEl.textContent=text;
+  statusEl.className="sync-state "+(good?"cloud-good":"cloud-warn");
+  if(detail) accountEl.textContent=detail;
+}
+function hasMeaningfulLocalData(s){
+  if((s.notes||"").trim()) return true;
+  if(Object.values(s.monthly||{}).some(v=>Number(v)!==0)) return true;
+  for(const day of Object.values(s.daily||{})) {
+    if(Object.values(day||{}).some(v=>Number(v)!==0)) return true;
+  }
+  return false;
+}
+async function writeCloud(message="Cloud Sync: Saved"){
+  if(!currentUser || !cloudReady || applyingRemote || !dashboardRef) return;
+  try{
+    const snapshot=window.dashboardCloudHooks.getState();
+    const json=JSON.stringify(snapshot);
+    setCloudStatus("☁️ Cloud Sync: Saving…",true,currentUser.email||"Signed in");
+    await setDoc(dashboardRef,{state:snapshot,updatedAt:serverTimestamp()},{merge:true});
+    lastCloudJson=json;
+    setCloudStatus("☁️ "+message,true,currentUser.email||"Signed in");
+  }catch(err){
+    console.error(err);
+    setCloudStatus("☁️ Cloud Sync: Save failed",false,"Local copy is safe on this device. "+(err.code||""));
+  }
+}
+window.dashboardCloudHooks.onLocalSave=()=>{
+  if(!currentUser || !cloudReady || applyingRemote) return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>writeCloud(),700);
+};
+
+async function startCloudSync(user){
+  currentUser=user;
+  cloudReady=false;
+  dashboardRef=doc(db,"users",user.uid,"dashboard","current");
+  signInBtn.style.display="none";
+  signOutBtn.style.display="inline-block";
+  syncNowBtn.style.display="inline-block";
+  setCloudStatus("☁️ Cloud Sync: Connecting…",true,user.email||"Signed in");
+
+  try{
+    const first=await getDoc(dashboardRef);
+    if(first.exists() && first.data().state){
+      const remote=first.data().state;
+      lastCloudJson=JSON.stringify(remote);
+      applyingRemote=true;
+      window.dashboardCloudHooks.applyState(remote,"Cloud data loaded");
+      applyingRemote=false;
+    }
+    cloudReady=true;
+    if(!first.exists() && hasMeaningfulLocalData(window.dashboardCloudHooks.getState())) {
+      await writeCloud("Cloud Sync: First backup complete");
+    } else {
+      setCloudStatus("☁️ Cloud Sync: Connected",true,user.email||"Signed in");
+    }
+
+    if(unsubscribe) unsubscribe();
+    unsubscribe=onSnapshot(dashboardRef,(snap)=>{
+      if(!snap.exists() || !snap.data().state || applyingRemote) return;
+      const remote=snap.data().state;
+      const remoteJson=JSON.stringify(remote);
+      const localJson=JSON.stringify(window.dashboardCloudHooks.getState());
+      if(remoteJson===localJson || remoteJson===lastCloudJson) {
+        lastCloudJson=remoteJson;
+        return;
+      }
+      lastCloudJson=remoteJson;
+      applyingRemote=true;
+      window.dashboardCloudHooks.applyState(remote,"Synced from another device");
+      applyingRemote=false;
+      setCloudStatus("☁️ Cloud Sync: Updated from cloud",true,user.email||"Signed in");
+    },(err)=>{
+      console.error(err);
+      setCloudStatus("☁️ Cloud Sync: Connection issue",false,"Local storage is still working. "+(err.code||""));
+    });
+  }catch(err){
+    console.error(err);
+    cloudReady=false;
+    setCloudStatus("☁️ Cloud Sync: Connection failed",false,"Local storage is still working. "+(err.code||""));
+  }
+}
+
+signInBtn.addEventListener("click",async()=>{
+  setCloudStatus("☁️ Cloud Sync: Signing in…",true,"Choose the Google account you want to use on both devices.");
+  try{
+    await signInWithPopup(auth,provider);
+  }catch(err){
+    if(["auth/popup-blocked","auth/popup-closed-by-user","auth/cancelled-popup-request"].includes(err.code)){
+      if(err.code==="auth/popup-blocked") await signInWithRedirect(auth,provider);
+      else setCloudStatus("☁️ Cloud Sync: Sign-in not completed",false,"Tap Sign in with Google to try again.");
+    }else{
+      console.error(err);
+      setCloudStatus("☁️ Cloud Sync: Sign-in failed",false,(err.code||"Please try again."));
+    }
+  }
+});
+
+signOutBtn.addEventListener("click",async()=>{
+  if(unsubscribe){unsubscribe();unsubscribe=null;}
+  cloudReady=false; dashboardRef=null; currentUser=null;
+  await signOut(auth);
+});
+
+syncNowBtn.addEventListener("click",()=>writeCloud("Cloud Sync: Saved now"));
+
+getRedirectResult(auth).catch(err=>console.error(err));
+onAuthStateChanged(auth,(user)=>{
+  if(user){
+    startCloudSync(user);
+  }else{
+    currentUser=null; cloudReady=false; dashboardRef=null;
+    if(unsubscribe){unsubscribe();unsubscribe=null;}
+    signInBtn.style.display="inline-block";
+    signOutBtn.style.display="none";
+    syncNowBtn.style.display="none";
+    setCloudStatus("☁️ Cloud Sync: Not signed in",false,"Local device storage is active.");
+  }
+});
+</script>
+
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then(reg => reg.update()).catch(() => {});
   });
 }
 </script>
