@@ -109,7 +109,7 @@ tfoot td{font-weight:800;background:#f8fafc}
 
   <div class="card">
     <div class="muted">Production Dashboard</div>
-    <h1>Monthly + Weekly Planner</h1>
+    <h1><span id="plannerMonthYear"></span> Monthly + Weekly Planner</h1>
     <div class="muted" style="font-size:12px;margin-top:-4px">Cloud Sync + Monthly History Build v5</div>
     <div class="muted">Your entries are stored on this device. Sign in below to sync them securely between your Samsung and Dell.</div>
     <div class="sync-panel">
@@ -535,6 +535,10 @@ function readCommission(){
   };
   renderMonthly(); renderCommission(); saveState("Calculator saved");
 }
+function renderPlannerHeading(){
+  document.getElementById("plannerMonthYear").textContent=new Date().toLocaleDateString([], {month:"long",year:"numeric"});
+}
+
 function renderWeekRange(){
   const now=new Date();
   const day=now.getDay(); // Sunday=0
@@ -558,6 +562,7 @@ function hydrate(){
   document.getElementById("cashGoal").value=c.cashGoal;
   document.getElementById("notes").value=state.notes;
   if(!document.getElementById("archiveMonth").value) document.getElementById("archiveMonth").value=currentMonthKey();
+  renderPlannerHeading();
   renderWeekRange();
   loadDay(); renderMonthly(); renderCommission(); renderWeekly(); renderArchiveHistory();
 }
