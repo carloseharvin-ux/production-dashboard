@@ -1,4 +1,4 @@
-const CACHE_NAME = 'production-dashboard-v4';
+const CACHE_NAME = 'production-dashboard-v5';
 const ASSETS = [
   './',
   './index.html',
