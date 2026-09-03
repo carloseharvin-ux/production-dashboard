@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#111827">
 <title>Production Dashboard</title>
-<meta name="description" content="Monthly + Weekly Production Dashboard">
+<meta name="description" content="Monthly + Weekly + Daily Production Dashboard">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -57,12 +57,13 @@ button{
 .danger{background:#fee2e2;color:#991b1b}
 .button-row{display:flex;gap:10px;flex-wrap:wrap}
 .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.weekly-kpis{grid-template-columns:repeat(5,minmax(0,1fr))}
 .kpi{background:var(--soft);border-radius:14px;padding:12px;text-align:center}
 .kpi .num{display:block;font-size:22px;font-weight:800;margin-top:3px}
 .kpi .lab{font-size:11px;color:var(--muted)}
 .goalstrip{font-size:24px;font-weight:800;letter-spacing:.5px}
 .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
-table{border-collapse:collapse;width:100%;min-width:850px;font-size:13px}
+table{border-collapse:collapse;width:100%;min-width:1100px;font-size:13px}
 th,td{padding:9px 8px;border-bottom:1px solid #e5e7eb;text-align:center}
 th{background:#eef2f7;font-size:12px}
 td:first-child,th:first-child{text-align:left}
@@ -95,7 +96,7 @@ tfoot td{font-weight:800;background:#f8fafc}
 .cloud-good{color:#166534}.cloud-warn{color:#92400e}
 @media(max-width:760px){
   .grid4,.grid3,.grid2{grid-template-columns:1fr 1fr}
-  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpis,.weekly-kpis{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:460px){
   .grid4,.grid3,.grid2{grid-template-columns:1fr}
@@ -109,9 +110,34 @@ tfoot td{font-weight:800;background:#f8fafc}
 
   <div class="card">
     <div class="muted">Production Dashboard</div>
-    <h1><span id="plannerMonthYear"></span> Monthly + Weekly Planner</h1>
-    <div class="muted" style="font-size:12px;margin-top:-4px">Cloud Sync + Monthly History Build v7</div>
+    <h1><span id="plannerMonthYear"></span> Monthly + Weekly + Daily Planner</h1>
+    <div class="muted" style="font-size:12px;margin-top:-4px">Cloud Sync + Monthly History Build v8</div>
     <div class="muted">Your entries are stored on this device. Sign in below to sync them securely between your Samsung and Dell.</div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="sync-panel" style="margin-top:0">
+        <h3>Agent Information</h3>
+        <div class="goal"><div class="goal-top"><span>Agent Name</span><strong>Carlos Harvin</strong></div></div>
+        <div class="goal"><div class="goal-top"><span>Contract Level</span><strong id="agentContractLevelText">Division Leader</strong></div></div>
+      </div>
+      <div class="sync-panel" style="margin-top:0">
+        <h3>Contract Level Details</h3>
+        <label>Contract Level
+          <select id="contractLevel">
+            <option value="25">Representative — 25%</option>
+            <option value="35">Senior Representative — 35%</option>
+            <option value="50">District Leader — 50%</option>
+            <option value="60">Division Leader — 60%</option>
+            <option value="70">Regional Leader — 70%</option>
+            <option value="95">Regional Vice President — 95%</option>
+          </select>
+        </label>
+        <div class="grid3" style="margin-top:10px">
+          <label>Contract %<input id="contractPct" type="number" min="0" step="1"></label>
+          <label>Commissionable Factor %<input id="factorPct" type="number" min="0" step="1"></label>
+          <label>Cash Flow Goal ($)<input id="cashGoal" type="number" min="0" step="1"></label>
+        </div>
+      </div>
+    </div>
     <div class="sync-panel">
       <div class="sync-row">
         <div>
@@ -133,26 +159,26 @@ tfoot td{font-weight:800;background:#f8fafc}
   <div class="grid2">
     <section class="card">
       <h2>Personal Monthly Goals</h2>
-      <div class="goal"><div class="goal-top"><span>Personal Premium</span><strong id="gPPText">$0 / $10,000</strong></div><div class="bar"><div id="gPPBar" class="fill"></div></div></div>
-      <div class="goal"><div class="goal-top"><span>Direct Recruits</span><strong id="gDRText">0 / 5</strong></div><div class="bar"><div id="gDRBar" class="fill"></div></div></div>
-      <div class="goal"><div class="goal-top"><span>Direct Prelicensed Agents</span><strong id="gDPText">0 / 3</strong></div><div class="bar"><div id="gDPBar" class="fill"></div></div></div>
-      <div class="goal"><div class="goal-top"><span>Direct Licensed Agents</span><strong id="gDLText">0 / 2</strong></div><div class="bar"><div id="gDLBar" class="fill"></div></div></div>
-      <div class="goal"><div class="goal-top"><span>Personal Cash Flow</span><strong id="gCFText">$0 / $4,500</strong></div><div class="bar"><div id="gCFBar" class="fill"></div></div></div>
+      <div class="goal"><div class="goal-top"><span>Personal Premium</span><strong>$10,000</strong></div></div>
+      <div class="goal"><div class="goal-top"><span>Direct Recruits</span><strong>5</strong></div></div>
+      <div class="goal"><div class="goal-top"><span>Direct Prelicensed Agents</span><strong>3</strong></div></div>
+      <div class="goal"><div class="goal-top"><span>Direct Licensed Agents</span><strong>2</strong></div></div>
+      <div class="goal"><div class="goal-top"><span>Personal Cash Flow</span><strong>$4,500</strong></div></div>
     </section>
 
     <section class="card">
       <h2>Team Monthly Goals <span style="font-size:12px;font-weight:400;color:var(--muted)">(incl. personal results)</span></h2>
-      <div class="goal"><div class="goal-top"><span>Team Premium</span><strong id="gTPText">$0 / $15,000</strong></div><div class="bar"><div id="gTPBar" class="fill"></div></div></div>
-      <div class="goal"><div class="goal-top"><span>Team Recruits</span><strong id="gTRText">0 / 15</strong></div><div class="bar"><div id="gTRBar" class="fill"></div></div></div>
-      <div class="goal"><div class="goal-top"><span>Team Prelicensed Agents</span><strong id="gTPLText">0 / 6</strong></div><div class="bar"><div id="gTPLBar" class="fill"></div></div></div>
-      <div class="goal"><div class="goal-top"><span>Team Licensed Agents</span><strong id="gTLText">0 / 4</strong></div><div class="bar"><div id="gTLBar" class="fill"></div></div></div>
+      <div class="goal"><div class="goal-top"><span>Team Premium</span><strong>$15,000</strong></div></div>
+      <div class="goal"><div class="goal-top"><span>Team Recruits</span><strong>15</strong></div></div>
+      <div class="goal"><div class="goal-top"><span>Team Prelicensed Agents</span><strong>6</strong></div></div>
+      <div class="goal"><div class="goal-top"><span>Team Licensed Agents</span><strong>4</strong></div></div>
     </section>
   </div>
 
   <section class="card">
-    <div class="muted">Daily Production Goals</div>
+    <h2>Daily Production Goals</h2>
     <div class="goalstrip">32 • 5 • 3 • 2 • 1 • 1</div>
-    <div class="muted">Contacts • Scheduled • Completed • Quotes • Sale • Recruit</div>
+    <div class="muted">Contacts • Scheduled • Completed • Quotes • Sales • Recruits</div>
   </section>
 
   <section class="card">
@@ -169,8 +195,9 @@ tfoot td{font-weight:800;background:#f8fafc}
       <label>Completed<input id="dCompleted" type="number" min="0" inputmode="numeric"></label>
       <label>Quotes<input id="dQuotes" type="number" min="0" inputmode="numeric"></label>
       <label>Sales<input id="dSales" type="number" min="0" inputmode="numeric"></label>
+      <label>Personal Premium ($)<input id="dPremium" type="number" min="0" inputmode="decimal"></label>
+      <label>Team Premium ($)<input id="dTeamPremium" type="number" min="0" inputmode="decimal"></label>
       <label>Direct Recruits<input id="dRecruits" type="number" min="0" inputmode="numeric"></label>
-      <label>Premium ($)<input id="dPremium" type="number" min="0" inputmode="decimal"></label>
       <label>Team Recruits<input id="dTeamRecruits" type="number" min="0" inputmode="numeric"></label>
       <label>Direct PreLic<input id="dDirectPreLic" type="number" min="0" inputmode="numeric"></label>
       <label>Team PreLic<input id="dTeamPreLic" type="number" min="0" inputmode="numeric"></label>
@@ -195,7 +222,7 @@ tfoot td{font-weight:800;background:#f8fafc}
     <div class="tablewrap">
       <table>
         <thead>
-          <tr><th>Day</th><th>Contacts</th><th>Sched</th><th>Comp</th><th>Quotes</th><th>Sales</th><th>Premium</th><th>Recruits</th><th>Cash Flow</th></tr>
+          <tr><th>Day</th><th>Contacts</th><th>Sched</th><th>Comp</th><th>Quotes</th><th>Sales</th><th>Personal Premium</th><th>Team Premium</th><th>Direct Recruits</th><th>Team Recruits</th><th>Cash Flow</th></tr>
         </thead>
         <tbody id="scoreBody"></tbody>
         <tfoot id="scoreFoot"></tfoot>
@@ -205,13 +232,16 @@ tfoot td{font-weight:800;background:#f8fafc}
 
   <section class="card">
     <h2>Weekly Totals <span class="muted" id="weeklyTotalsWeek"></span></h2>
-    <div class="kpis">
+    <div class="kpis weekly-kpis">
       <div class="kpi"><span class="lab">Contacts</span><span id="tContacts" class="num">0</span><span class="lab">Goal 160</span></div>
       <div class="kpi"><span class="lab">Scheduled</span><span id="tScheduled" class="num">0</span><span class="lab">Goal 16</span></div>
       <div class="kpi"><span class="lab">Completed</span><span id="tCompleted" class="num">0</span><span class="lab">Goal 8</span></div>
       <div class="kpi"><span class="lab">Quotes</span><span id="tQuotes" class="num">0</span><span class="lab">Goal 5</span></div>
       <div class="kpi"><span class="lab">Sales</span><span id="tSales" class="num">0</span><span class="lab">Goal 3</span></div>
-      <div class="kpi"><span class="lab">Recruits</span><span id="tRecruits" class="num">0</span><span class="lab">Goal 1</span></div>
+      <div class="kpi"><span class="lab">Personal Premium</span><span id="tPremium" class="num">$0</span><span class="lab">Weekly Total</span></div>
+      <div class="kpi"><span class="lab">Team Premium</span><span id="tTeamPremium" class="num">$0</span><span class="lab">Weekly Total</span></div>
+      <div class="kpi"><span class="lab">Direct Recruits</span><span id="tRecruits" class="num">0</span><span class="lab">Goal 1</span></div>
+      <div class="kpi"><span class="lab">Team Recruits</span><span id="tTeamRecruits" class="num">0</span><span class="lab">Weekly Total</span></div>
       <div class="kpi"><span class="lab">Cash Flow</span><span id="tCashflow" class="num">$0</span><span class="lab">Weekly Total</span></div>
     </div>
     <div style="margin-top:14px">
@@ -272,29 +302,13 @@ tfoot td{font-weight:800;background:#f8fafc}
   </section>
 
   <section class="card">
-    <div class="muted">Personal Cash Flow <span id="personalCashFlowMonth"></span></div>
-    <h2>Life Commission Calculator</h2>
-    <div class="grid4">
-      <label>Contract Level
-        <select id="contractLevel">
-          <option value="25">Representative — 25%</option>
-          <option value="35">Senior Representative — 35%</option>
-          <option value="50">District Leader — 50%</option>
-          <option value="60">Division Leader — 60%</option>
-          <option value="70">Regional Leader — 70%</option>
-          <option value="95">Regional Vice President — 95%</option>
-        </select>
-      </label>
-      <label>Contract %<input id="contractPct" type="number" min="0" step="1"></label>
-      <label>Commissionable Factor %<input id="factorPct" type="number" min="0" step="1"></label>
-      <label>Cash-Flow Goal ($)<input id="cashGoal" type="number" min="0" step="1"></label>
-    </div>
+    <h2>Personal Cash Flow <span class="muted" id="personalCashFlowMonth"></span></h2>
     <div class="grid3" style="margin-top:12px">
       <div class="kpi"><span class="lab">EST. GROSS CASH FLOW</span><span id="estimateCF" class="num">$0</span></div>
       <div class="kpi"><span class="lab">ACTUAL PROGRESS</span><span id="actualProgress" class="num">0%</span></div>
       <div class="kpi"><span class="lab">ACTUAL RESULT MTD</span><span id="actualCF" class="num">$0</span></div>
     </div>
-    <div class="section-note">Estimated Gross Cash Flow = Personal Premium × Commissionable Factor × Contract %. Actual Result uses the Personal Cash Flow you enter above. Percentages are editable planning assumptions.</div>
+    <div class="section-note">Estimated Gross Cash Flow = Personal Premium × Commissionable Factor × Contract %. Actual Result uses the Personal Cash Flow entered in Update Monthly Results.</div>
   </section>
 
   <section class="card">
@@ -314,7 +328,7 @@ tfoot td{font-weight:800;background:#f8fafc}
 <script>
 const KEY = "productionDashboardV1";
 const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-const blankDay = () => ({contacts:0,scheduled:0,completed:0,quotes:0,sales:0,recruits:0,premium:0,teamRecruits:0,directPreLic:0,teamPreLic:0,directCodes:0,teamCodes:0,cashflow:0});
+const blankDay = () => ({contacts:0,scheduled:0,completed:0,quotes:0,sales:0,recruits:0,premium:0,teamPremium:0,teamRecruits:0,directPreLic:0,teamPreLic:0,directCodes:0,teamCodes:0,cashflow:0});
 const defaults = {
   monthly:{pp:0,dr:0,dpl:0,dl:0,tp:0,tr:0,tl:0,cf:0,tpl:0},
   commission:{level:"60",contractPct:60,factorPct:75,cashGoal:4500},
@@ -368,16 +382,7 @@ const clampPct=(a,b)=> Math.max(0,Math.min(100,pct(a,b)));
 
 function fillBar(id,val,goal){document.getElementById(id).style.width=clampPct(val,goal)+"%"}
 function renderMonthly(){
-  const m=state.monthly, c=state.commission;
-  document.getElementById("gPPText").textContent=`${money(m.pp)} / $10,000`; fillBar("gPPBar",m.pp,10000);
-  document.getElementById("gDRText").textContent=`${m.dr} / 5`; fillBar("gDRBar",m.dr,5);
-  document.getElementById("gDPText").textContent=`${m.dpl} / 3`; fillBar("gDPBar",m.dpl,3);
-  document.getElementById("gDLText").textContent=`${m.dl} / 2`; fillBar("gDLBar",m.dl,2);
-  document.getElementById("gCFText").textContent=`${money(m.cf)} / ${money(c.cashGoal)}`; fillBar("gCFBar",m.cf,c.cashGoal);
-  document.getElementById("gTPText").textContent=`${money(m.tp)} / $15,000`; fillBar("gTPBar",m.tp,15000);
-  document.getElementById("gTRText").textContent=`${m.tr} / 15`; fillBar("gTRBar",m.tr,15);
-  document.getElementById("gTPLText").textContent=`${m.tpl} / 6`; fillBar("gTPLBar",m.tpl,6);
-  document.getElementById("gTLText").textContent=`${m.tl} / 4`; fillBar("gTLBar",m.tl,4);
+  const m=state.monthly;
   document.getElementById("licenseWarning").style.display = m.tl < m.dl ? "block":"none";
 }
 function renderCommission(){
@@ -386,6 +391,10 @@ function renderCommission(){
   document.getElementById("estimateCF").textContent=money(estimate);
   document.getElementById("actualCF").textContent=money(m.cf);
   document.getElementById("actualProgress").textContent=pct(m.cf,c.cashGoal)+"%";
+  const selected=document.getElementById("contractLevel");
+  const label=selected && selected.selectedOptions[0] ? selected.selectedOptions[0].textContent.split(" — ")[0] : "";
+  const levelText=document.getElementById("agentContractLevelText");
+  if(levelText) levelText.textContent=label;
 }
 function currentMonthKey(){
   const d=new Date();
@@ -398,7 +407,7 @@ function monthLabel(key){
 }
 function monthlyGoalsSnapshot(){
   const c=state.commission;
-  return {pp:10000,dr:5,dpl:3,dl:2,cf:Number(c.cashGoal)||4500,tp:15000,tr:15,tpl:6,tl:4};
+  return {pp:10000,dr:5,dpl:3,dl:2,cf:4500,tp:15000,tr:15,tpl:6,tl:4};
 }
 function saveMonthArchive(resetAfter=false){
   const key=document.getElementById("archiveMonth").value || currentMonthKey();
@@ -477,7 +486,10 @@ function renderWeekly(){
   document.getElementById("tCompleted").textContent=t.completed;
   document.getElementById("tQuotes").textContent=t.quotes;
   document.getElementById("tSales").textContent=t.sales;
+  document.getElementById("tPremium").textContent=money(t.premium);
+  document.getElementById("tTeamPremium").textContent=money(t.teamPremium);
   document.getElementById("tRecruits").textContent=t.recruits;
+  document.getElementById("tTeamRecruits").textContent=t.teamRecruits;
   document.getElementById("tCashflow").textContent=money(t.cashflow);
   document.getElementById("salesProgressText").textContent=`${t.sales} / 3`;
   fillBar("salesProgressBar",t.sales,3);
@@ -489,10 +501,10 @@ function renderWeekly(){
   const body=document.getElementById("scoreBody");
   body.innerHTML=days.map(d=>{
     const x=state.daily[d];
-    return `<tr><td>${d}</td><td>${x.contacts}</td><td>${x.scheduled}</td><td>${x.completed}</td><td>${x.quotes}</td><td>${x.sales}</td><td>${money(x.premium)}</td><td>${x.recruits}</td><td>${money(x.cashflow)}</td></tr>`;
+    return `<tr><td>${d}</td><td>${x.contacts}</td><td>${x.scheduled}</td><td>${x.completed}</td><td>${x.quotes}</td><td>${x.sales}</td><td>${money(x.premium)}</td><td>${money(x.teamPremium)}</td><td>${x.recruits}</td><td>${x.teamRecruits}</td><td>${money(x.cashflow)}</td></tr>`;
   }).join("");
   document.getElementById("scoreFoot").innerHTML=
-    `<tr><td>WEEKLY TOTALS</td><td>${t.contacts}</td><td>${t.scheduled}</td><td>${t.completed}</td><td>${t.quotes}</td><td>${t.sales}</td><td>${money(t.premium)}</td><td>${t.recruits}</td><td>${money(t.cashflow)}</td></tr>`;
+    `<tr><td>WEEKLY TOTALS</td><td>${t.contacts}</td><td>${t.scheduled}</td><td>${t.completed}</td><td>${t.quotes}</td><td>${t.sales}</td><td>${money(t.premium)}</td><td>${money(t.teamPremium)}</td><td>${t.recruits}</td><td>${t.teamRecruits}</td><td>${money(t.cashflow)}</td></tr>`;
 }
 function loadDay(){
   const d=document.getElementById("daySelect").value, x=state.daily[d];
@@ -503,6 +515,7 @@ function loadDay(){
   document.getElementById("dSales").value=x.sales;
   document.getElementById("dRecruits").value=x.recruits;
   document.getElementById("dPremium").value=x.premium;
+  document.getElementById("dTeamPremium").value=x.teamPremium||0;
   document.getElementById("dTeamRecruits").value=x.teamRecruits||0;
   document.getElementById("dDirectPreLic").value=x.directPreLic||0;
   document.getElementById("dTeamPreLic").value=x.teamPreLic||0;
@@ -515,7 +528,7 @@ function saveDay(){
   state.daily[d]={
     contacts:n("dContacts"),scheduled:n("dScheduled"),completed:n("dCompleted"),
     quotes:n("dQuotes"),sales:n("dSales"),recruits:n("dRecruits"),
-    premium:n("dPremium"),teamRecruits:n("dTeamRecruits"),directPreLic:n("dDirectPreLic"),
+    premium:n("dPremium"),teamPremium:n("dTeamPremium"),teamRecruits:n("dTeamRecruits"),directPreLic:n("dDirectPreLic"),
     teamPreLic:n("dTeamPreLic"),directCodes:n("dDirectCodes"),teamCodes:n("dTeamCodes"),cashflow:n("dCashflow")
   };
   saveState(d+" saved");
