@@ -110,7 +110,7 @@ tfoot td{font-weight:800;background:#f8fafc}
   <div class="card">
     <div class="muted">Production Dashboard</div>
     <h1><span id="plannerMonthYear"></span> Monthly + Weekly Planner</h1>
-    <div class="muted" style="font-size:12px;margin-top:-4px">Cloud Sync + Monthly History Build v5</div>
+    <div class="muted" style="font-size:12px;margin-top:-4px">Cloud Sync + Monthly History Build v7</div>
     <div class="muted">Your entries are stored on this device. Sign in below to sync them securely between your Samsung and Dell.</div>
     <div class="sync-panel">
       <div class="sync-row">
@@ -156,7 +156,7 @@ tfoot td{font-weight:800;background:#f8fafc}
   </section>
 
   <section class="card">
-    <h2>Daily Entry</h2>
+    <h2>Daily Entry <span class="muted" id="dailyEntryWeek"></span></h2>
     <div class="grid4">
       <label>Day
         <select id="daySelect">
@@ -191,7 +191,7 @@ tfoot td{font-weight:800;background:#f8fafc}
   </section>
 
   <section class="card">
-    <h2>Weekly Scoreboard</h2>
+    <h2>Weekly Scoreboard <span class="muted" id="weeklyScoreboardWeek"></span></h2>
     <div class="tablewrap">
       <table>
         <thead>
@@ -204,7 +204,7 @@ tfoot td{font-weight:800;background:#f8fafc}
   </section>
 
   <section class="card">
-    <h2>Weekly Totals</h2>
+    <h2>Weekly Totals <span class="muted" id="weeklyTotalsWeek"></span></h2>
     <div class="kpis">
       <div class="kpi"><span class="lab">Contacts</span><span id="tContacts" class="num">0</span><span class="lab">Goal 160</span></div>
       <div class="kpi"><span class="lab">Scheduled</span><span id="tScheduled" class="num">0</span><span class="lab">Goal 16</span></div>
@@ -221,7 +221,7 @@ tfoot td{font-weight:800;background:#f8fafc}
   </section>
 
   <section class="card">
-    <h2>Update Monthly Results</h2>
+    <h2>Update Monthly Results <span class="muted" id="updateMonthlyMonth"></span></h2>
     <div class="grid4">
       <label>1. Personal Premium ($)<input id="mPP" type="number" min="0" inputmode="decimal"></label>
       <label>2. Direct Recruits<input id="mDR" type="number" min="0" inputmode="numeric"></label>
@@ -262,7 +262,7 @@ tfoot td{font-weight:800;background:#f8fafc}
   </section>
 
   <section class="card">
-    <h2>Conversion Rates</h2>
+    <h2>Conversion Rates <span class="muted" id="conversionMonth"></span></h2>
     <div class="grid4">
       <div class="kpi"><span class="lab">Schedule Rate</span><span id="rateSchedule" class="num">0%</span></div>
       <div class="kpi"><span class="lab">Show Rate</span><span id="rateShow" class="num">0%</span></div>
@@ -272,7 +272,7 @@ tfoot td{font-weight:800;background:#f8fafc}
   </section>
 
   <section class="card">
-    <div class="muted">Personal Cash Flow</div>
+    <div class="muted">Personal Cash Flow <span id="personalCashFlowMonth"></span></div>
     <h2>Life Commission Calculator</h2>
     <div class="grid4">
       <label>Contract Level
@@ -552,6 +552,27 @@ function renderWeekRange(){
   document.getElementById("weekRange").textContent=
     start.toLocaleDateString([],opts)+" – "+end.toLocaleDateString([],opts);
 }
+
+function renderPeriodHeadings(){
+  const now=new Date();
+  const day=now.getDay();
+  const diffToMonday=day===0 ? -6 : 1-day;
+  const start=new Date(now);
+  start.setHours(0,0,0,0);
+  start.setDate(now.getDate()+diffToMonday);
+  const end=new Date(start);
+  end.setDate(start.getDate()+6);
+  const weekOpts={month:"short",day:"numeric",year:"numeric"};
+  const weekText=start.toLocaleDateString([],weekOpts)+" – "+end.toLocaleDateString([],weekOpts);
+  const monthText=now.toLocaleDateString([], {month:"long",year:"numeric"});
+  ["dailyEntryWeek","weeklyScoreboardWeek","weeklyTotalsWeek"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=weekText;
+  });
+  ["updateMonthlyMonth","conversionMonth","personalCashFlowMonth"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=monthText;
+  });
+}
+
 function hydrate(){
   const m=state.monthly,c=state.commission;
   for(const [id,val] of Object.entries({mPP:m.pp,mDR:m.dr,mTP:m.tp,mTR:m.tr,mDPL:m.dpl,mTPL:m.tpl,mDL:m.dl,mTL:m.tl,mCF:m.cf}))
@@ -564,6 +585,7 @@ function hydrate(){
   if(!document.getElementById("archiveMonth").value) document.getElementById("archiveMonth").value=currentMonthKey();
   renderPlannerHeading();
   renderWeekRange();
+  renderPeriodHeadings();
   loadDay(); renderMonthly(); renderCommission(); renderWeekly(); renderArchiveHistory();
 }
 
